@@ -24,9 +24,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
         except Exception:
             # Never leak internal details to the client.
             self._logger.exception("Unhandled error")
-            return self._build_response(
-                500, "internal_error", "An unexpected error occurred."
-            )
+            return self._build_response(500, "internal_error", "An unexpected error occurred.")
 
     @staticmethod
     def _build_response(status_code: int, error: str, message: str) -> JSONResponse:
