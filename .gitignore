@@ -8,4 +8,4 @@ __pycache__/
 *.db
 node_modules/
 .next/
-Add-Content .gitignore "*.egg-info/"
+*.egg-info/
