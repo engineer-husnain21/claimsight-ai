@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
     rate_limit_per_minute: int = 60
+    auth_rate_limit_per_minute: int = 10
 
     # LLM
     llm_provider: str = "gemini"
