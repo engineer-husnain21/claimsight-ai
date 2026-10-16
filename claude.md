@@ -16,6 +16,12 @@ main.py → middlewares → routers → services → orchestrators → agents �
                                repositories → db
 ```
 
+Command-line scripts in `scripts/` are entry points like `main.py`. They call services only:
+
+```
+scripts → services → repositories → db
+```
+
 ---
 
 ## 2. Folder Structure
@@ -24,8 +30,8 @@ main.py → middlewares → routers → services → orchestrators → agents �
 project-root/
   app/
     main.py              # App setup, middleware and router registration
-    core/                # Config, DI, logging, custom exceptions
-    middlewares/         # Request ID, logging, global error handler
+    core/                # Config, DI, logging, clock, custom exceptions
+    middlewares/         # Request ID, logging, security headers, rate limit, global error handler
     routers/             # Endpoints only, no logic
     schemas/             # Request/response DTOs (Pydantic)
     services/            # Business logic
@@ -41,13 +47,16 @@ project-root/
     integration/         # End-to-end flows
   web/                   # Frontend (if any)
   data/                  # Sample/demo data
+  docs/
+    screenshots/         # App screenshots for README and portfolio
+  scripts/               # One-off CLI utilities (create_user.py)
   .env.example           # All env vars with dummy values
   .gitignore
   pyproject.toml
   README.md
 ```
 
-Every folder inside `app/` has an `__init__.py`.
+Every folder inside `app/` has an `__init__.py`. `scripts/` has one too, so scripts run as `python -m scripts.<name>`.
 
 ---
 
@@ -56,7 +65,7 @@ Every folder inside `app/` has an `__init__.py`.
 | Layer | Does | Never does |
 |---|---|---|
 | `main.py` | Creates the app, registers middlewares and routers | Business logic |
-| `middlewares/` | Cross-cutting work on every request: logging, request ID, error handling | Call services or agents |
+| `middlewares/` | Cross-cutting work on every request: logging, request ID, security headers, rate limiting, error handling | Call services or agents |
 | `routers/` | Receive request, validate with schema, call one service, return response | Logic, DB calls, LLM calls |
 | `services/` | Business rules, decide what happens, call orchestrators and repositories | Talk to HTTP or LLM APIs directly |
 | `orchestrators/` | Decide which agent runs, in what order, and pass data between them | DB calls, direct LLM calls |
@@ -66,7 +75,9 @@ Every folder inside `app/` has an `__init__.py`.
 | `models/` | DB table definitions | Logic |
 | `schemas/` | Input/output shapes and validation | Logic |
 | `prompts/` | Prompt text, one file per prompt | Code |
-| `core/` | Settings, DI setup, logger, exception classes | Feature logic |
+| `core/` | Settings, DI setup, logger, clock, exception classes | Feature logic |
+| `scripts/` | One-off admin tasks (create users, seed data) by calling services | Business logic, direct DB access |
+| `docs/` | Documentation assets such as screenshots | Code |
 
 ---
 
@@ -104,6 +115,8 @@ Every folder inside `app/` has an `__init__.py`.
 | Router files | `<feature>_router.py` | `research_router.py` |
 | URLs | Versioned, plural, kebab-case | `/api/v1/research-jobs` |
 | Prompt files | `<agent>_<purpose>.md` | `planner_system.md` |
+| Script files | `<verb>_<thing>.py` | `create_user.py` |
+| Screenshot files | `<number>-<short-name>.png` | `01-api-docs.png` |
 | Test files | `test_<file>.py` | `test_planner_agent.py` |
 | Test functions | `test_<what>_when_<condition>_<expected>` | `test_run_when_no_sources_raises_error` |
 | Env vars | UPPER_SNAKE | `LLM_PROVIDER`, `GROQ_API_KEY` |
