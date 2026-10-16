@@ -11,8 +11,11 @@ from app.core.exceptions import ForbiddenError, UnauthorizedError
 from app.db.session import get_db_session
 from app.models.user import User
 from app.models.user_role import UserRole
+from app.repositories.audit_log_repository import AuditLogRepository
+from app.repositories.claim_repository import ClaimRepository
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
+from app.services.claim_service import ClaimService
 from app.services.password_service import PasswordService
 from app.services.token_service import TokenService
 
@@ -37,6 +40,14 @@ def get_user_repository(session: DbSessionDep) -> UserRepository:
     return UserRepository(session)
 
 
+def get_claim_repository(session: DbSessionDep) -> ClaimRepository:
+    return ClaimRepository(session)
+
+
+def get_audit_log_repository(session: DbSessionDep) -> AuditLogRepository:
+    return AuditLogRepository(session)
+
+
 def get_auth_service(
     user_repository: Annotated[UserRepository, Depends(get_user_repository)],
     password_service: Annotated[PasswordService, Depends(get_password_service)],
@@ -45,7 +56,15 @@ def get_auth_service(
     return AuthService(user_repository, password_service, token_service)
 
 
+def get_claim_service(
+    claim_repository: Annotated[ClaimRepository, Depends(get_claim_repository)],
+    audit_log_repository: Annotated[AuditLogRepository, Depends(get_audit_log_repository)],
+) -> ClaimService:
+    return ClaimService(claim_repository, audit_log_repository)
+
+
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+ClaimServiceDep = Annotated[ClaimService, Depends(get_claim_service)]
 
 
 async def get_current_user(
@@ -70,3 +89,6 @@ def require_roles(*allowed_roles: UserRole) -> Callable[[User], Awaitable[User]]
         return current_user
 
     return _check_role
+
+
+ReviewerDep = Annotated[User, Depends(require_roles(UserRole.ADMIN, UserRole.REVIEWER))]
