@@ -12,14 +12,20 @@ from app.main import create_app
 
 
 @pytest.fixture
-async def client(tmp_path: Path) -> AsyncIterator[httpx.AsyncClient]:
+async def session_factory(tmp_path: Path) -> AsyncIterator[async_sessionmaker[AsyncSession]]:
     engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path.as_posix()}/test.db")
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
-    factory = async_sessionmaker(engine, expire_on_commit=False)
+    yield async_sessionmaker(engine, expire_on_commit=False)
+    await engine.dispose()
 
+
+@pytest.fixture
+async def client(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> AsyncIterator[httpx.AsyncClient]:
     async def override_db_session() -> AsyncIterator[AsyncSession]:
-        async with factory() as session:
+        async with session_factory() as session:
             try:
                 yield session
                 await session.commit()
@@ -33,4 +39,3 @@ async def client(tmp_path: Path) -> AsyncIterator[httpx.AsyncClient]:
     transport = httpx.ASGITransport(app=test_app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as http_client:
         yield http_client
-    await engine.dispose()
