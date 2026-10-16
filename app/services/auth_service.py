@@ -26,6 +26,10 @@ class AuthService:
         self._token_service = token_service
 
     async def register(self, request: RegisterRequest) -> User:
+        # Public registration never grants elevated roles.
+        return await self.create_user(request, UserRole.SUBMITTER)
+
+    async def create_user(self, request: RegisterRequest, role: UserRole) -> User:
         email = request.email.strip().lower()
         if await self._user_repository.get_by_email(email) is not None:
             raise ConflictError("An account with this email already exists.")
@@ -34,8 +38,7 @@ class AuthService:
             email=email,
             full_name=request.full_name.strip(),
             hashed_password=await self._password_service.hash_password(request.password),
-            # Public registration never grants elevated roles.
-            role=UserRole.SUBMITTER,
+            role=role,
         )
         return await self._user_repository.add(user)
 
