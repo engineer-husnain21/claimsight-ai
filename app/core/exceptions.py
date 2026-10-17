@@ -44,3 +44,8 @@ class ExternalServiceError(AppError):
     status_code = 502
     error_code = "external_service_error"
     default_message = "An external service failed."
+
+
+class LlmClientError(ExternalServiceError):
+    error_code = "llm_error"
+    default_message = "The language model service failed."
