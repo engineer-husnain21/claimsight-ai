@@ -6,8 +6,11 @@ from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.clients.gemini_llm_client import GeminiLlmClient
+from app.clients.groq_llm_client import GroqLlmClient
+from app.clients.llm_client import LlmClient
 from app.core.config import Settings, get_settings
-from app.core.exceptions import ForbiddenError, UnauthorizedError
+from app.core.exceptions import AppError, ForbiddenError, UnauthorizedError
 from app.db.session import get_db_session
 from app.models.user import User
 from app.models.user_role import UserRole
@@ -92,3 +95,35 @@ def require_roles(*allowed_roles: UserRole) -> Callable[[User], Awaitable[User]]
 
 
 ReviewerDep = Annotated[User, Depends(require_roles(UserRole.ADMIN, UserRole.REVIEWER))]
+
+
+def build_llm_client(settings: Settings) -> LlmClient:
+    """Create the LLM client for the provider selected in settings."""
+    provider = settings.llm_provider.lower()
+
+    if provider == "groq":
+        if settings.groq_api_key is None:
+            raise AppError("The LLM provider is not configured.")
+        return GroqLlmClient(
+            api_key=settings.groq_api_key.get_secret_value(),
+            model=settings.llm_model,
+        )
+
+    if provider == "gemini":
+        if settings.google_api_key is None:
+            raise AppError("The LLM provider is not configured.")
+        return GeminiLlmClient(
+            api_key=settings.google_api_key.get_secret_value(),
+            model=settings.llm_model,
+        )
+
+    raise AppError("The LLM provider is not configured.")
+
+
+@lru_cache
+def get_llm_client() -> LlmClient:
+    """Return a shared LLM client instance for FastAPI dependency injection."""
+    return build_llm_client(get_settings())
+
+
+LlmClientDep = Annotated[LlmClient, Depends(get_llm_client)]
