@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     llm_model: str
     google_api_key: SecretStr | None = None
     groq_api_key: SecretStr | None = None
+    chroma_persist_dir: str = "data/chroma"
+    policy_collection_name: str = "insurance_policies"
+    policies_dir: str = "data/policies"
+    rag_top_k: int = 4
 
 
 @lru_cache
