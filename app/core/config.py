@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     llm_provider: str = "gemini"
     llm_model: str
     google_api_key: SecretStr | None = None
+    groq_api_key: SecretStr | None = None
 
 
 @lru_cache
