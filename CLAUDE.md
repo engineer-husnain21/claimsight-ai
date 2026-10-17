@@ -30,7 +30,7 @@ scripts → services → repositories → db
 project-root/
   app/
     main.py              # App setup, middleware and router registration
-    core/                # Config, DI, logging, clock, custom exceptions
+    core/                # Config, DI, logging, clock, custom exceptions, prompt loader
     middlewares/         # Request ID, logging, security headers, rate limit, global error handler
     routers/             # Endpoints only, no logic
     schemas/             # Request/response DTOs (Pydantic)
@@ -45,6 +45,7 @@ project-root/
   tests/
     unit/                # Mirrors app/ folder by folder
     integration/         # End-to-end flows
+    fakes/               # Fake clients for tests (no real LLM or API calls)
   web/                   # Frontend (if any)
   data/                  # Sample/demo data
   docs/
@@ -75,7 +76,7 @@ Every folder inside `app/` has an `__init__.py`. `scripts/` has one too, so scri
 | `models/` | DB table definitions | Logic |
 | `schemas/` | Input/output shapes and validation | Logic |
 | `prompts/` | Prompt text, one file per prompt | Code |
-| `core/` | Settings, DI setup, logger, clock, exception classes | Feature logic |
+| `core/` | Settings, DI setup, logger, clock, exception classes, prompt loader | Feature logic |
 | `scripts/` | One-off admin tasks (create users, seed data) by calling services | Business logic, direct DB access |
 | `docs/` | Documentation assets such as screenshots | Code |
 
@@ -183,6 +184,7 @@ class BaseAgent(ABC, Generic[TInput, TOutput]):
 - Unit tests never call a real LLM or API. Use fake clients.
 - `tests/integration/` covers full request flows.
 - Every agent and service has at least one test.
+- Shared test fakes (like `FakeLlmClient`) live in `tests/fakes/`.
 
 ---
 
