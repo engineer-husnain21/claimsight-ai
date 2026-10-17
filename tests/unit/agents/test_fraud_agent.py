@@ -76,6 +76,49 @@ async def test_run_when_risk_score_out_of_range_raises_error() -> None:
         await agent.run(_fraud_input())
 
 
+async def test_run_when_exact_duplicate_adds_flag_and_high_risk() -> None:
+    fraud_input = _fraud_input().model_copy(
+        update={
+            "extraction": ExtractionOutput(admission_date=date(2026, 10, 3), total_amount=253000),
+            "prior_claims": [
+                PriorClaim(
+                    claim_id="claim-0042",
+                    service_date=date(2026, 10, 3),
+                    total_amount=253000,
+                )
+            ],
+        }
+    )
+    agent = FraudAgent(FakeLlmClient(reply=_reply(0, [])), PromptLoader())
+
+    result = await agent.run(fraud_input)
+
+    assert [item.rule_code for item in result.flags] == ["FRD-01"]
+    assert "claim-0042" in result.flags[0].message
+    assert result.risk_level == "high"
+
+
+async def test_run_when_no_duplicate_keeps_llm_score() -> None:
+    fraud_input = _fraud_input().model_copy(
+        update={
+            "extraction": ExtractionOutput(admission_date=date(2026, 10, 3), total_amount=253000),
+            "prior_claims": [
+                PriorClaim(
+                    claim_id="claim-0042",
+                    service_date=date(2026, 9, 1),
+                    total_amount=253000,
+                )
+            ],
+        }
+    )
+    agent = FraudAgent(FakeLlmClient(reply=_reply(10, [])), PromptLoader())
+
+    result = await agent.run(fraud_input)
+
+    assert result.flags == []
+    assert result.risk_score == 10
+
+
 @pytest.mark.parametrize(
     ("score", "expected_level"), [(0, "low"), (29, "low"), (30, "medium"), (70, "high")]
 )

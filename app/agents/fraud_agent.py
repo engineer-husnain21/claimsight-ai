@@ -4,7 +4,9 @@ import json
 
 from app.agents.base_agent import BaseAgent
 from app.schemas.fraud_input import FraudInput
-from app.schemas.fraud_output import FraudOutput
+from app.schemas.fraud_output import HIGH_RISK_THRESHOLD, FraudFlag, FraudOutput
+
+DUPLICATE_RULE_CODE = "FRD-01"
 
 
 class FraudAgent(BaseAgent[FraudInput, FraudOutput]):
@@ -31,7 +33,8 @@ class FraudAgent(BaseAgent[FraudInput, FraudOutput]):
             claim_details=agent_input.extraction.model_dump_json(indent=2),
         )
         output = await self._generate_output(system_prompt, user_prompt)
-        return self._keep_known_rule_codes(output, agent_input)
+        output = self._keep_known_rule_codes(output, agent_input)
+        return self._add_duplicate_flag(output, agent_input)
 
     @staticmethod
     def _keep_known_rule_codes(output: FraudOutput, agent_input: FraudInput) -> FraudOutput:
@@ -39,3 +42,35 @@ class FraudAgent(BaseAgent[FraudInput, FraudOutput]):
         known_codes = {chunk.rule_code for chunk in agent_input.policy_chunks}
         flags = [flag for flag in output.flags if flag.rule_code in known_codes]
         return output.model_copy(update={"flags": flags})
+
+    @staticmethod
+    def _add_duplicate_flag(output: FraudOutput, agent_input: FraudInput) -> FraudOutput:
+        """Flag exact duplicates in code, so the check never depends on the LLM."""
+        extraction = agent_input.extraction
+        if extraction.admission_date is None or extraction.total_amount is None:
+            return output
+
+        duplicates = [
+            claim.claim_id
+            for claim in agent_input.prior_claims
+            if claim.service_date == extraction.admission_date
+            and claim.total_amount == extraction.total_amount
+        ]
+        already_flagged = any(flag.rule_code == DUPLICATE_RULE_CODE for flag in output.flags)
+        if not duplicates or already_flagged:
+            return output
+
+        flag = FraudFlag(
+            rule_code=DUPLICATE_RULE_CODE,
+            message=("Same service date and amount as earlier claim(s): " + ", ".join(duplicates)),
+        )
+        return output.model_copy(
+            update={
+                "flags": [*output.flags, flag],
+                "risk_score": max(output.risk_score, HIGH_RISK_THRESHOLD),
+                "reasoning": (
+                    f"{output.reasoning} A rule-based check found an exact "
+                    "duplicate of an earlier claim, so the risk was raised."
+                ),
+            }
+        )
