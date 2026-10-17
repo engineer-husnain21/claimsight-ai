@@ -1,7 +1,10 @@
 from collections.abc import Awaitable, Callable
 from functools import lru_cache
+from pathlib import Path
 from typing import Annotated
 
+import chromadb
+from chromadb.api import ClientAPI
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,10 +19,14 @@ from app.models.user import User
 from app.models.user_role import UserRole
 from app.repositories.audit_log_repository import AuditLogRepository
 from app.repositories.claim_repository import ClaimRepository
+from app.repositories.policy_document_repository import PolicyDocumentRepository
+from app.repositories.policy_repository import PolicyRepository
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
 from app.services.claim_service import ClaimService
 from app.services.password_service import PasswordService
+from app.services.policy_chunking_service import PolicyChunkingService
+from app.services.policy_ingestion_service import PolicyIngestionService
 from app.services.token_service import TokenService
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
@@ -127,3 +134,30 @@ def get_llm_client() -> LlmClient:
 
 
 LlmClientDep = Annotated[LlmClient, Depends(get_llm_client)]
+
+
+@lru_cache
+def get_chroma_client() -> ClientAPI:
+    """Return a shared ChromaDB client that stores data on disk."""
+    return chromadb.PersistentClient(path=get_settings().chroma_persist_dir)
+
+
+@lru_cache
+def get_policy_repository() -> PolicyRepository:
+    """Return the shared policy vector store repository."""
+    return PolicyRepository(
+        client=get_chroma_client(),
+        collection_name=get_settings().policy_collection_name,
+    )
+
+
+def get_policy_ingestion_service() -> PolicyIngestionService:
+    """Build the service that loads policy files into the vector store."""
+    return PolicyIngestionService(
+        document_repository=PolicyDocumentRepository(Path(get_settings().policies_dir)),
+        policy_repository=get_policy_repository(),
+        chunking_service=PolicyChunkingService(),
+    )
+
+
+PolicyRepositoryDep = Annotated[PolicyRepository, Depends(get_policy_repository)]
