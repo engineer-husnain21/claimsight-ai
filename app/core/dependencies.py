@@ -27,6 +27,7 @@ from app.services.claim_service import ClaimService
 from app.services.password_service import PasswordService
 from app.services.policy_chunking_service import PolicyChunkingService
 from app.services.policy_ingestion_service import PolicyIngestionService
+from app.services.policy_retrieval_service import PolicyRetrievalService
 from app.services.token_service import TokenService
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
@@ -161,3 +162,14 @@ def get_policy_ingestion_service() -> PolicyIngestionService:
 
 
 PolicyRepositoryDep = Annotated[PolicyRepository, Depends(get_policy_repository)]
+
+
+def get_policy_retrieval_service() -> PolicyRetrievalService:
+    """Build the service that searches policy rules."""
+    return PolicyRetrievalService(
+        policy_repository=get_policy_repository(),
+        default_top_k=get_settings().rag_top_k,
+    )
+
+
+PolicyRetrievalServiceDep = Annotated[PolicyRetrievalService, Depends(get_policy_retrieval_service)]
