@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     policy_collection_name: str = "insurance_policies"
     policies_dir: str = "data/policies"
     rag_top_k: int = 4
+    mcp_user_email: str | None = None
 
 
 @lru_cache

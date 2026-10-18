@@ -70,6 +70,13 @@ class AuthService:
             raise UnauthorizedError(_INVALID_SESSION)
         return user
 
+    async def get_active_user_by_email(self, email: str) -> User:
+        """Return an active user by email, for trusted local entry points like MCP."""
+        user = await self._user_repository.get_by_email(email.strip().lower())
+        if user is None or not user.is_active:
+            raise UnauthorizedError("MCP user not found or inactive.")
+        return user
+
     def _issue_tokens(self, user: User) -> TokenResponse:
         return TokenResponse(
             access_token=self._token_service.create_access_token(user),

@@ -173,3 +173,13 @@ def get_policy_retrieval_service() -> PolicyRetrievalService:
 
 
 PolicyRetrievalServiceDep = Annotated[PolicyRetrievalService, Depends(get_policy_retrieval_service)]
+
+
+def build_auth_service(session: AsyncSession) -> AuthService:
+    """Build AuthService for code that manages its own DB session (MCP, scripts)."""
+    return AuthService(UserRepository(session), get_password_service(), get_token_service())
+
+
+def build_claim_service(session: AsyncSession) -> ClaimService:
+    """Build ClaimService for code that manages its own DB session (MCP, scripts)."""
+    return ClaimService(ClaimRepository(session), AuditLogRepository(session))
