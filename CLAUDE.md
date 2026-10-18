@@ -22,6 +22,12 @@ Command-line scripts in `scripts/` are entry points like `main.py`. They call se
 scripts → services → repositories → db
 ```
 
+MCP servers in `mcp_servers/` are entry points for AI clients, like routers are for HTTP. Each tool calls one service only:
+
+```
+mcp_servers → services → orchestrators / repositories
+```
+
 ---
 
 ## 2. Folder Structure
@@ -33,6 +39,7 @@ project-root/
     core/                # Config, DI, logging, clock, custom exceptions, prompt loader
     middlewares/         # Request ID, logging, security headers, rate limit, global error handler
     routers/             # Endpoints only, no logic
+    mcp_servers/         # MCP servers that expose app features as tools for AI clients
     schemas/             # Request/response DTOs (Pydantic)
     services/            # Business logic
     orchestrators/       # Runs the flow between agents
@@ -68,6 +75,7 @@ Every folder inside `app/` has an `__init__.py`. `scripts/` has one too, so scri
 | `main.py` | Creates the app, registers middlewares and routers | Business logic |
 | `middlewares/` | Cross-cutting work on every request: logging, request ID, security headers, rate limiting, error handling | Call services or agents |
 | `routers/` | Receive request, validate with schema, call one service, return response | Logic, DB calls, LLM calls |
+| `mcp_servers/` | Expose features as MCP tools, validate tool input, call one service per tool, act as the configured MCP user | Logic, DB calls, LLM calls, skipping role checks |
 | `services/` | Business rules, decide what happens, call orchestrators and repositories | Talk to HTTP or LLM APIs directly |
 | `orchestrators/` | Decide which agent runs, in what order, and pass data between them | DB calls, direct LLM calls |
 | `agents/` | One focused AI task each (plan, research, write, review) | Touch the DB, call other agents directly |
@@ -85,7 +93,7 @@ Every folder inside `app/` has an `__init__.py`. `scripts/` has one too, so scri
 ## 4. Dependency Rules
 
 1. Calls only go **downward** in the flow. A lower layer never imports a higher one.
-2. **No skipping layers.** A router never calls a repository or an agent directly.
+2. **No skipping layers.** A router or MCP tool never calls a repository or an agent directly.
 3. Agents never call each other. The orchestrator connects them.
 4. Only `clients/` talk to the outside world. Only `repositories/` touch data.
 5. Depend on base classes or Protocols, not on concrete classes. Inject the real one through DI.
@@ -114,6 +122,8 @@ Every folder inside `app/` has an `__init__.py`. `scripts/` has one too, so scri
 | Agent input/output | `Input` / `Output` suffix | `PlannerInput`, `PlannerOutput` |
 | DB entities | Singular noun | `ResearchJob` |
 | Router files | `<feature>_router.py` | `research_router.py` |
+| MCP server files | `<feature>_mcp_server.py` | `claims_mcp_server.py` |
+| MCP tool names | snake_case, verb first | `search_policies`, `get_claim` |
 | URLs | Versioned, plural, kebab-case | `/api/v1/research-jobs` |
 | Prompt files | `<agent>_<purpose>.md` | `planner_system.md` |
 | Script files | `<verb>_<thing>.py` | `create_user.py` |
@@ -122,7 +132,7 @@ Every folder inside `app/` has an `__init__.py`. `scripts/` has one too, so scri
 | Test functions | `test_<what>_when_<condition>_<expected>` | `test_run_when_no_sources_raises_error` |
 | Env vars | UPPER_SNAKE | `LLM_PROVIDER`, `GROQ_API_KEY` |
 
-**Suffix list:** `Service`, `Orchestrator`, `Agent`, `Client`, `Repository`, `Request`, `Response`, `Input`, `Output`, `Middleware`, `Error`.
+**Suffix list:** `Service`, `Orchestrator`, `Agent`, `Client`, `Repository`, `Request`, `Response`, `Input`, `Output`, `Middleware`, `McpServer`, `Error`.
 
 ---
 
