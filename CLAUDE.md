@@ -228,3 +228,65 @@ When you need something that does not fit an existing folder, follow these steps
 8. **Update this file:** add a row to the tables in sections 1, 2, 3 and 5, so the next developer knows where it lives.
 
 If you are not sure where something goes, ask before building it. A wrong placement is cheap to fix on day one and expensive later.
+
+
+
+
+## 12. Frontend (web/)
+
+### 12.1 Stack
+- Next.js 16 (App Router, TypeScript strict), Tailwind CSS
+- motion (`motion/react`) for animations, React Three Fiber v9 for 3D
+- Node.js 20.9+ (project uses Node 24 LTS)
+
+### 12.2 Folder structure
+```
+web/
+  src/
+    app/
+      (auth)/login/page.tsx        # public pages
+      (app)/...                    # protected pages
+      api/auth/*/route.ts          # BFF route handlers (login, logout, refresh)
+      layout.tsx
+    components/
+      ui/                          # reusable UI primitives
+      effects/                     # visual effects (particle background)
+      three/                       # React Three Fiber scenes
+    lib/
+      server/                      # server-only code: config, API client, cookies
+      utils/                       # shared pure helpers
+    types/                         # API response types mirroring backend schemas
+    proxy.ts                       # route protection (Next.js 16 replacement for middleware.ts)
+```
+
+### 12.3 Layering
+```
+page / component -> route handler or server component -> lib/server -> FastAPI backend
+```
+- Client components never call the FastAPI backend directly.
+- Only route handlers and server components may import from `lib/server/`.
+- Components do not import from each other's internals; shared pieces go in `components/ui/`.
+
+### 12.4 Security rules (BFF pattern)
+- Access and refresh tokens live only in httpOnly, Secure (in production), SameSite=Lax cookies set by the Next.js server.
+- Browser JavaScript must never receive, read or store a token (no localStorage, no sessionStorage).
+- Every file in `lib/server/` starts with `import "server-only";`.
+- Backend URL comes from server env `API_BASE_URL` only. Never use a `NEXT_PUBLIC_` prefix for secrets or backend URLs.
+- The browser never talks to FastAPI directly, so the backend does not need `http://localhost:3000` in `CORS_ORIGINS`.
+- Error messages shown to the user are generic; backend details are not echoed.
+
+### 12.5 Naming
+- File names: kebab-case (`particle-background.tsx`, `api-client.ts`).
+- React components: PascalCase (`ParticleBackground`).
+- Types: PascalCase, matching backend schema names (`ClaimResponse`, `ClaimReviewResponse`).
+- Route handlers export named HTTP methods only (`POST`, `GET`).
+
+### 12.6 Quality checks (before every frontend commit)
+```
+cd web
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+- No `any` without a comment explaining why.
+- Comments and UI-facing dev text in English.
