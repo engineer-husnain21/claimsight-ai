@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cookies } from "next/headers";
 import type { NextRequest, NextResponse } from "next/server";
 
 import type { TokenResponse } from "@/types/auth";
@@ -26,7 +27,8 @@ function baseCookieOptions(): CookieOptions {
   };
 }
 
-function isValidTokenResponse(tokens: TokenResponse): boolean {
+/** Checks that the backend returned usable tokens before they are stored. */
+export function isValidTokenResponse(tokens: TokenResponse): boolean {
   return (
     typeof tokens.access_token === "string" &&
     tokens.access_token.length > 0 &&
@@ -64,4 +66,10 @@ export function clearSessionCookies(response: NextResponse): void {
 /** Reads the refresh token cookie from an incoming request. */
 export function readRefreshToken(request: NextRequest): string | null {
   return request.cookies.get(REFRESH_COOKIE)?.value ?? null;
+}
+
+/** Reads the access token in server components. */
+export async function getAccessToken(): Promise<string | null> {
+  const cookieStore = await cookies();
+  return cookieStore.get(ACCESS_COOKIE)?.value ?? null;
 }
