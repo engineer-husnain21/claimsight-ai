@@ -64,6 +64,30 @@ class PolicyRepository:
             for chunk_id, document, metadata in zip(ids, documents, metadatas, strict=True)
         ]
 
+    async def list_by_source(self, source: str) -> list[PolicyChunk]:
+        """Return every chunk that came from one policy document."""
+        result = await asyncio.to_thread(
+            self._collection.get,
+            where={"source": source},
+            include=["documents", "metadatas"],
+        )
+        documents = result["documents"] or []
+        metadatas = result["metadatas"] or []
+
+        chunks = [
+            PolicyChunk(
+                id=chunk_id,
+                source=str(metadata["source"]),
+                rule_code=str(metadata["rule_code"]),
+                title=str(metadata["title"]),
+                text=document,
+            )
+            for chunk_id, document, metadata in zip(
+                result["ids"], documents, metadatas, strict=True
+            )
+        ]
+        return sorted(chunks, key=lambda chunk: chunk.rule_code)
+
     async def count(self) -> int:
         """Return how many chunks are stored."""
         return await asyncio.to_thread(self._collection.count)

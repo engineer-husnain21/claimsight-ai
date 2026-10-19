@@ -61,3 +61,31 @@ async def test_upsert_chunks_when_empty_list_stores_nothing(
     await repository.upsert_chunks([])
 
     assert await repository.count() == 0
+
+
+async def test_list_by_source_when_called_returns_only_that_source_sorted(
+    repository: PolicyRepository,
+) -> None:
+    await repository.upsert_chunks(
+        [
+            _chunk("COV-01", "Annual limit text."),
+            PolicyChunk(
+                id="fraud_indicators:FRD-02",
+                source="fraud_indicators",
+                rule_code="FRD-02",
+                title="Amount",
+                text="Unusual amount.",
+            ),
+            PolicyChunk(
+                id="fraud_indicators:FRD-01",
+                source="fraud_indicators",
+                rule_code="FRD-01",
+                title="Duplicate",
+                text="Duplicate claims.",
+            ),
+        ]
+    )
+
+    chunks = await repository.list_by_source("fraud_indicators")
+
+    assert [chunk.rule_code for chunk in chunks] == ["FRD-01", "FRD-02"]
