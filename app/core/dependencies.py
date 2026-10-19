@@ -234,3 +234,15 @@ def build_auth_service(session: AsyncSession) -> AuthService:
 def build_claim_service(session: AsyncSession) -> ClaimService:
     """Build ClaimService for code that manages its own DB session (MCP, scripts)."""
     return ClaimService(ClaimRepository(session), AuditLogRepository(session))
+
+
+def build_claim_review_service(session: AsyncSession) -> ClaimReviewService:
+    """Build ClaimReviewService for code that manages its own DB session (MCP)."""
+    return ClaimReviewService(
+        claim_repository=ClaimRepository(session),
+        claim_review_repository=ClaimReviewRepository(session),
+        audit_log_repository=AuditLogRepository(session),
+        policy_retrieval_service=get_policy_retrieval_service(),
+        orchestrator=get_claim_review_orchestrator(),
+        llm_model=get_settings().llm_model,
+    )

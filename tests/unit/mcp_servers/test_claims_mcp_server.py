@@ -3,13 +3,18 @@ import uuid
 import chromadb
 import pytest
 from mcp.server.mcpserver.exceptions import ToolError
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.mcp_servers.claims_mcp_server import ClaimsMcpServer
 from app.repositories.policy_repository import PolicyRepository
 from app.schemas.policy_chunk import PolicyChunk
+from app.services.claim_review_service import ClaimReviewService
 from app.services.policy_retrieval_service import PolicyRetrievalService
 from tests.fakes.fake_embedding_function import FakeEmbeddingFunction
+
+
+def _unused_claim_review_service_builder(session: AsyncSession) -> ClaimReviewService:
+    raise AssertionError("These tests never build the claim review service.")
 
 
 @pytest.fixture
@@ -43,10 +48,11 @@ async def mcp_server() -> ClaimsMcpServer:
         session_factory=session_factory,
         policy_retrieval_service=PolicyRetrievalService(repository, default_top_k=2),
         mcp_user_email=None,
+        claim_review_service_builder=_unused_claim_review_service_builder,
     )
 
 
-async def test_list_tools_when_server_created_exposes_three_tools(
+async def test_list_tools_when_server_created_exposes_four_tools(
     mcp_server: ClaimsMcpServer,
 ) -> None:
     tools = await mcp_server.server.list_tools()
@@ -55,6 +61,7 @@ async def test_list_tools_when_server_created_exposes_three_tools(
         "search_policies",
         "get_claim",
         "list_claims",
+        "get_claim_review",
     }
 
 
