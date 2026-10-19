@@ -16,6 +16,7 @@ from app.middlewares.rate_limit_middleware import RateLimitMiddleware
 from app.middlewares.request_id_middleware import RequestIdMiddleware
 from app.middlewares.security_headers_middleware import SecurityHeadersMiddleware
 from app.routers.auth_router import router as auth_router
+from app.routers.claim_review_router import router as claim_review_router
 from app.routers.claims_router import router as claims_router
 from app.routers.health_router import router as health_router
 from app.schemas.error_response import ErrorResponse
@@ -78,6 +79,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router, prefix=settings.api_prefix)
     app.include_router(auth_router, prefix=settings.api_prefix)
     app.include_router(claims_router, prefix=settings.api_prefix)
+    app.include_router(claim_review_router, prefix=settings.api_prefix)
     return app
 
 
