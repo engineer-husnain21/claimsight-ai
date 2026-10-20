@@ -6,6 +6,7 @@ from app.core.dependencies import ClaimServiceDep, CurrentUserDep, ReviewerDep
 from app.models.claim_status import ClaimStatus
 from app.schemas.claim_list_response import ClaimListResponse
 from app.schemas.claim_response import ClaimResponse
+from app.schemas.claim_stats_response import ClaimStatsResponse
 from app.schemas.create_claim_request import CreateClaimRequest
 from app.schemas.review_claim_request import ReviewClaimRequest
 
@@ -39,6 +40,16 @@ async def list_claims(
         limit=limit,
         offset=offset,
     )
+
+
+# Must stay above "/{claim_id}", otherwise "stats" is parsed as a claim id.
+@router.get("/stats", response_model=ClaimStatsResponse)
+async def get_claim_stats(
+    current_user: CurrentUserDep,
+    claim_service: ClaimServiceDep,
+) -> ClaimStatsResponse:
+    by_status = await claim_service.get_claim_stats(current_user)
+    return ClaimStatsResponse(total=sum(by_status.values()), by_status=by_status)
 
 
 @router.get("/{claim_id}", response_model=ClaimResponse)

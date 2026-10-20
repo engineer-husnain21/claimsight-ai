@@ -41,6 +41,17 @@ class ClaimRepository(BaseRepository[Claim]):
         )
         return result.scalars().all(), total or 0
 
+    async def count_by_status(self, *, submitter_id: str | None) -> dict[ClaimStatus, int]:
+        """Return how many claims exist per status, using one grouped query."""
+        conditions: list[ColumnElement[bool]] = []
+        if submitter_id is not None:
+            conditions.append(Claim.submitted_by == submitter_id)
+
+        result = await self._session.execute(
+            select(Claim.status, func.count()).where(*conditions).group_by(Claim.status)
+        )
+        return {ClaimStatus(status): count for status, count in result.all()}
+
     async def save(self, claim: Claim) -> Claim:
         """Persist changes made to an already loaded claim."""
         await self._session.flush()

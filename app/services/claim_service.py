@@ -69,10 +69,19 @@ class ClaimService:
         limit: int,
         offset: int,
     ) -> tuple[Sequence[Claim], int]:
-        submitter_id = None if user.role in PRIVILEGED_ROLES else user.id
         return await self._claim_repository.list_claims(
-            submitter_id=submitter_id, status=status, limit=limit, offset=offset
+            submitter_id=self._visible_submitter_id(user),
+            status=status,
+            limit=limit,
+            offset=offset,
         )
+
+    async def get_claim_stats(self, user: User) -> dict[ClaimStatus, int]:
+        """Claim counts for every status; submitters only count their own claims."""
+        counts = await self._claim_repository.count_by_status(
+            submitter_id=self._visible_submitter_id(user)
+        )
+        return {status: counts.get(status, 0) for status in ClaimStatus}
 
     async def review_claim(
         self, claim_id: str, request: ReviewClaimRequest, reviewer: User
@@ -106,3 +115,8 @@ class ClaimService:
     @staticmethod
     def _can_access(claim: Claim, user: User) -> bool:
         return user.role in PRIVILEGED_ROLES or claim.submitted_by == user.id
+
+    @staticmethod
+    def _visible_submitter_id(user: User) -> str | None:
+        """None means "all submitters"; regular users only see their own claims."""
+        return None if user.role in PRIVILEGED_ROLES else user.id

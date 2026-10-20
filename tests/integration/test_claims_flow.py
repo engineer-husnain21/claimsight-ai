@@ -7,6 +7,7 @@ from app.repositories.user_repository import UserRepository
 REGISTER_URL = "/api/v1/auth/register"
 LOGIN_URL = "/api/v1/auth/login"
 CLAIMS_URL = "/api/v1/claims"
+STATS_URL = "/api/v1/claims/stats"
 PASSWORD = "StrongPass123"
 
 
@@ -165,3 +166,56 @@ async def test_review_claim_when_status_is_not_a_decision_returns_422(
     )
 
     assert response.status_code == 422
+
+
+async def test_get_claim_stats_when_user_is_submitter_returns_only_own_counts(
+    client: httpx.AsyncClient,
+) -> None:
+    alice = await _auth_headers(client, "alice@example.com")
+    bob = await _auth_headers(client, "bob@example.com")
+    await client.post(CLAIMS_URL, json=_claim_payload(), headers=alice)
+    await client.post(CLAIMS_URL, json=_claim_payload(), headers=bob)
+
+    response = await client.get(STATS_URL, headers=alice)
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 1
+    assert response.json()["by_status"]["submitted"] == 1
+
+
+async def test_get_claim_stats_when_user_is_reviewer_returns_counts_for_every_status(
+    client: httpx.AsyncClient,
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    alice = await _auth_headers(client, "alice@example.com")
+    reviewer = await _auth_headers(client, "reviewer@example.com")
+    await _set_role(session_factory, "reviewer@example.com", UserRole.REVIEWER)
+    created = await client.post(CLAIMS_URL, json=_claim_payload(), headers=alice)
+    await client.post(CLAIMS_URL, json=_claim_payload(), headers=alice)
+    await client.patch(
+        f"{CLAIMS_URL}/{created.json()['id']}/status",
+        json={"status": "approved"},
+        headers=reviewer,
+    )
+
+    response = await client.get(STATS_URL, headers=reviewer)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "total": 2,
+        "by_status": {
+            "submitted": 1,
+            "processing": 0,
+            "needs_review": 0,
+            "approved": 1,
+            "rejected": 0,
+        },
+    }
+
+
+async def test_get_claim_stats_when_no_token_is_sent_returns_401(
+    client: httpx.AsyncClient,
+) -> None:
+    response = await client.get(STATS_URL)
+
+    assert response.status_code == 401

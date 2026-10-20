@@ -85,3 +85,36 @@ async def test_review_claim_when_reviewer_owns_the_claim_raises_forbidden(
         await service.review_claim(
             claim.id, ReviewClaimRequest(status=ClaimStatus.APPROVED), reviewer
         )
+
+
+async def test_get_claim_stats_when_user_is_submitter_counts_only_own_claims(
+    session: AsyncSession,
+) -> None:
+    owner = await _add_user(session, "owner@example.com", UserRole.SUBMITTER)
+    other = await _add_user(session, "other@example.com", UserRole.SUBMITTER)
+    service = _build_service(session)
+    await service.create_claim(_build_request(), owner)
+    await service.create_claim(_build_request(), other)
+
+    stats = await service.get_claim_stats(owner)
+
+    assert stats[ClaimStatus.SUBMITTED] == 1
+    assert sum(stats.values()) == 1
+
+
+async def test_get_claim_stats_when_user_is_reviewer_returns_every_status(
+    session: AsyncSession,
+) -> None:
+    owner = await _add_user(session, "owner@example.com", UserRole.SUBMITTER)
+    reviewer = await _add_user(session, "reviewer@example.com", UserRole.REVIEWER)
+    service = _build_service(session)
+    first = await service.create_claim(_build_request(), owner)
+    await service.create_claim(_build_request(), owner)
+    await service.review_claim(first.id, ReviewClaimRequest(status=ClaimStatus.APPROVED), reviewer)
+
+    stats = await service.get_claim_stats(reviewer)
+
+    expected = {status: 0 for status in ClaimStatus}
+    expected[ClaimStatus.SUBMITTED] = 1
+    expected[ClaimStatus.APPROVED] = 1
+    assert stats == expected
