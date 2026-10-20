@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ClaimDetails } from "@/components/claims/claim-details";
 import { RiskOverview } from "@/components/claims/risk-overview";
 import { StatusBadge } from "@/components/claims/status-badge";
+import { RunReviewPanel } from "@/components/review/run-review-panel";
 import { FadeIn } from "@/components/ui/fade-in";
 import { GlassCard } from "@/components/ui/glass-card";
 import { getCurrentUser } from "@/lib/server/authed-api";
@@ -29,6 +30,7 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
 
   const isReviewer = user.role === "reviewer" || user.role === "admin";
   const isOwnClaim = claim.submitted_by === user.id;
+  const canReview = isReviewer && !isOwnClaim;
 
   return (
     <div className="space-y-6">
@@ -55,9 +57,12 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
           <ClaimDetails claim={claim} />
         </FadeIn>
 
-        <FadeIn delay={0.2}>
-          {isReviewer && !isOwnClaim ? (
-            <RiskOverview riskScore={claim.risk_score} aiSummary={claim.ai_summary} />
+        <FadeIn delay={0.2} className="space-y-6">
+          {canReview ? (
+            <>
+              <RunReviewPanel claimId={claim.id} hasExistingReview={claim.risk_score !== null} />
+              <RiskOverview riskScore={claim.risk_score} aiSummary={claim.ai_summary} />
+            </>
           ) : (
             <GlassCard title="Review status">
               <p className="text-sm leading-relaxed text-foreground/70">
