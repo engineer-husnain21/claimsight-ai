@@ -1,5 +1,8 @@
 /** Mirrors backend ClaimStatus. */
-export type ClaimStatus = "submitted" | "needs_review" | "approved" | "rejected";
+export type ClaimStatus = "submitted" | "processing" | "needs_review" | "approved" | "rejected";
+
+/** Statuses a reviewer may set (backend REVIEW_DECISIONS). */
+export type ReviewDecision = "approved" | "rejected" | "needs_review";
 
 /** Mirrors backend ClaimResponse. */
 export interface ClaimResponse {

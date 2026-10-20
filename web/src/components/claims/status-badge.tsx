@@ -2,6 +2,10 @@ import type { ClaimStatus } from "@/types/claims";
 
 const STATUS_STYLES: Record<ClaimStatus, { label: string; className: string }> = {
   submitted: { label: "Submitted", className: "border-sky-400/30 bg-sky-400/10 text-sky-300" },
+  processing: {
+    label: "Processing",
+    className: "border-violet-400/30 bg-violet-400/10 text-violet-300",
+  },
   needs_review: {
     label: "Needs review",
     className: "border-amber-400/30 bg-amber-400/10 text-amber-300",

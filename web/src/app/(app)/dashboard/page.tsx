@@ -47,6 +47,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const statCards: StatCardData[] = [
     { label: "Total claims", value: stats.total, accent: "bg-accent-violet" },
     { label: "Submitted", value: stats.byStatus.submitted, accent: "bg-sky-400" },
+    { label: "Processing", value: stats.byStatus.processing, accent: "bg-violet-400" },
     { label: "Needs review", value: stats.byStatus.needs_review, accent: "bg-amber-400" },
     { label: "Approved", value: stats.byStatus.approved, accent: "bg-emerald-400" },
     { label: "Rejected", value: stats.byStatus.rejected, accent: "bg-rose-400" },

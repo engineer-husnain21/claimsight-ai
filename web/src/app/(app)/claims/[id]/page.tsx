@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ClaimDetails } from "@/components/claims/claim-details";
 import { RiskOverview } from "@/components/claims/risk-overview";
 import { StatusBadge } from "@/components/claims/status-badge";
+import { DecisionPanel } from "@/components/review/decision-panel";
 import { ReasoningView } from "@/components/review/reasoning-view";
 import { RunReviewPanel } from "@/components/review/run-review-panel";
 import { FadeIn } from "@/components/ui/fade-in";
@@ -65,6 +66,7 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
             <>
               <RunReviewPanel claimId={claim.id} hasExistingReview={claim.risk_score !== null} />
               <RiskOverview riskScore={claim.risk_score} aiSummary={claim.ai_summary} />
+              <DecisionPanel claimId={claim.id} currentStatus={claim.status} />
             </>
           ) : (
             <GlassCard title="Review status">

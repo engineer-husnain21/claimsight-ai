@@ -6,6 +6,7 @@ import type { ClaimListResponse, ClaimResponse, ClaimStatus } from "@/types/clai
 
 export const CLAIM_STATUSES: readonly ClaimStatus[] = [
   "submitted",
+  "processing",
   "needs_review",
   "approved",
   "rejected",

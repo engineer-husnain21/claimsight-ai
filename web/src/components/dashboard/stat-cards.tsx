@@ -23,7 +23,7 @@ function AnimatedNumber({ value }: { value: number }) {
 
 export function StatCards({ stats }: { stats: StatCardData[] }) {
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
       {stats.map((stat, index) => (
         <motion.div
           key={stat.label}
