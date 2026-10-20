@@ -43,18 +43,19 @@ export async function listClaims(query: ClaimListQuery): Promise<ClaimListRespon
   return authedRequest<ClaimListResponse>(`/claims?${params.toString()}`);
 }
 
-/** Counts claims per status using the list endpoint's total, in parallel. */
-export async function getClaimStats(): Promise<ClaimStats> {
-  const [all, ...perStatus] = await Promise.all([
-    listClaims({ limit: 1, offset: 0 }),
-    ...CLAIM_STATUSES.map((status) => listClaims({ status, limit: 1, offset: 0 })),
-  ]);
+interface ClaimStatsApiResponse {
+  total: number;
+  by_status: Partial<Record<ClaimStatus, number>>;
+}
 
+/** Claim counts per status from the backend, in a single request. */
+export async function getClaimStats(): Promise<ClaimStats> {
+  const response = await authedRequest<ClaimStatsApiResponse>("/claims/stats");
   const byStatus = Object.fromEntries(
-    CLAIM_STATUSES.map((status, index) => [status, perStatus[index].total]),
+    CLAIM_STATUSES.map((status) => [status, response.by_status[status] ?? 0]),
   ) as Record<ClaimStatus, number>;
 
-  return { total: all.total, byStatus };
+  return { total: response.total, byStatus };
 }
 
 /** Returns the claim, or null when it does not exist or the user may not see it. */
