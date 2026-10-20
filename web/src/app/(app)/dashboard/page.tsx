@@ -1,36 +1,13 @@
-import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/server/authed-api";
 
-import { ApiError, apiRequest } from "@/lib/server/api-client";
-import { getAccessToken } from "@/lib/server/session-cookies";
-import type { UserResponse } from "@/types/auth";
-
-async function loadCurrentUser(accessToken: string): Promise<UserResponse | null> {
-  try {
-    return await apiRequest<UserResponse>("/auth/me", { accessToken });
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 401) {
-      return null;
-    }
-    throw error;
-  }
-}
-
-/** Temporary placeholder; the real dashboard is built on Day 13. */
+/** Temporary content; the real dashboard comes in the next part. */
 export default async function DashboardPage() {
-  const accessToken = await getAccessToken();
-  if (accessToken === null) {
-    redirect("/login");
-  }
-
-  const user = await loadCurrentUser(accessToken);
-  if (user === null) {
-    redirect("/login");
-  }
+  const user = await getCurrentUser();
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-2">
-      <h1 className="text-2xl font-semibold">Welcome, {user.full_name}</h1>
-      <p className="text-sm opacity-70">Role: {user.role}</p>
-    </main>
+    <section className="py-20 text-center">
+      <h1 className="text-3xl font-semibold">Welcome, {user.full_name}</h1>
+      <p className="mt-2 text-foreground/60">Dashboard is coming in the next part.</p>
+    </section>
   );
 }
