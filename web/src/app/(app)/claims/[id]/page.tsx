@@ -5,11 +5,13 @@ import { notFound } from "next/navigation";
 import { ClaimDetails } from "@/components/claims/claim-details";
 import { RiskOverview } from "@/components/claims/risk-overview";
 import { StatusBadge } from "@/components/claims/status-badge";
+import { ReasoningView } from "@/components/review/reasoning-view";
 import { RunReviewPanel } from "@/components/review/run-review-panel";
 import { FadeIn } from "@/components/ui/fade-in";
 import { GlassCard } from "@/components/ui/glass-card";
 import { getCurrentUser } from "@/lib/server/authed-api";
 import { getClaim } from "@/lib/server/claims-api";
+import { getLatestReview } from "@/lib/server/review-api";
 import { formatDate } from "@/lib/utils/format";
 
 export const metadata: Metadata = {
@@ -31,6 +33,7 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
   const isReviewer = user.role === "reviewer" || user.role === "admin";
   const isOwnClaim = claim.submitted_by === user.id;
   const canReview = isReviewer && !isOwnClaim;
+  const latestReview = canReview ? await getLatestReview(claim.id) : null;
 
   return (
     <div className="space-y-6">
@@ -74,6 +77,8 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
           )}
         </FadeIn>
       </div>
+
+      {latestReview !== null && <ReasoningView review={latestReview} />}
     </div>
   );
 }
