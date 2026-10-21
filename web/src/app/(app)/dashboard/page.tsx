@@ -4,6 +4,7 @@ import { ClaimsTable } from "@/components/dashboard/claims-table";
 import { Pagination } from "@/components/dashboard/pagination";
 import { StatCards, type StatCardData } from "@/components/dashboard/stat-cards";
 import { StatusFilter } from "@/components/dashboard/status-filter";
+import { ClaimsOrbCard, type OrbLegendItem } from "@/components/three/claims-orb-card";
 import { getCurrentUser } from "@/lib/server/authed-api";
 import { CLAIM_STATUSES, getClaimStats, listClaims } from "@/lib/server/claims-api";
 import type { ClaimStatus } from "@/types/claims";
@@ -53,6 +54,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     { label: "Rejected", value: stats.byStatus.rejected, accent: "bg-rose-400" },
   ];
 
+  const orbItems: OrbLegendItem[] = [
+    { label: "Submitted", count: stats.byStatus.submitted, color: "#38bdf8" },
+    { label: "Processing", count: stats.byStatus.processing, color: "#a78bfa" },
+    { label: "Needs review", count: stats.byStatus.needs_review, color: "#fbbf24" },
+    { label: "Approved", count: stats.byStatus.approved, color: "#34d399" },
+    { label: "Rejected", count: stats.byStatus.rejected, color: "#fb7185" },
+  ];
+
   const buildPageHref = (target: number): string => {
     const query = new URLSearchParams({ page: String(target) });
     if (status !== undefined) {
@@ -63,18 +72,21 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Welcome back,{" "}
-          <span className="bg-linear-to-r from-accent-cyan via-accent-violet to-accent-pink bg-clip-text text-transparent">
-            {user.full_name}
-          </span>
-        </h1>
-        <p className="mt-1 text-sm text-foreground/55">
-          {isReviewer
-            ? "Review incoming claims with AI-assisted insights."
-            : "Track the status of the claims you have submitted."}
-        </p>
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Welcome back,{" "}
+            <span className="bg-linear-to-r from-accent-cyan via-accent-violet to-accent-pink bg-clip-text text-transparent">
+              {user.full_name}
+            </span>
+          </h1>
+          <p className="mt-1 text-sm text-foreground/55">
+            {isReviewer
+              ? "Review incoming claims with AI-assisted insights."
+              : "Track the status of the claims you have submitted."}
+          </p>
+        </div>
+        <ClaimsOrbCard items={orbItems} />
       </div>
 
       <StatCards stats={statCards} />
